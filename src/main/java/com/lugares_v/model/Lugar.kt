@@ -1,0 +1,41 @@
+package com.lugares_v.model
+
+import android.os.Parcelable
+
+import kotlinx.parcelize.Parcelize
+@Parcelize
+
+data class Lugar(
+
+    var id: String,
+
+    val nombre: String,
+
+    val correo: String?,
+
+    val web: String?,
+
+    val telefono: String?,
+
+    val latitud: Double?,
+
+    val longitud: Double?,
+
+    val altura: Double?,
+
+    val rutaAudio: String?,
+
+    val rutaimagen: String?
+) : Parcelable{
+    constructor():
+            this("",
+                "",
+                "",
+                "",
+                "",
+                0.0,
+                0.0,
+                0.0,
+                "",
+                "")
+}
