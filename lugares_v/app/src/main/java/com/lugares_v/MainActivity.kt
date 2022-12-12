@@ -3,107 +3,136 @@ package com.lugares_v
 import android.content.Intent
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
-import android.util.Log
 import android.widget.Toast
+import com.google.android.gms.auth.api.signin.GoogleSignIn
+import com.google.android.gms.auth.api.signin.GoogleSignInClient
+import com.google.android.gms.auth.api.signin.GoogleSignInOptions
+import com.google.android.gms.common.api.ApiException
 import com.google.firebase.FirebaseApp
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.FirebaseUser
+import com.google.firebase.auth.GoogleAuthProvider
 import com.google.firebase.auth.ktx.auth
 import com.google.firebase.ktx.Firebase
 import com.lugares_v.databinding.ActivityMainBinding
 
 class MainActivity : AppCompatActivity() {
-    //Definimos un objeto para la utentificacion de Firebase
-    private lateinit var auth : FirebaseAuth
 
-    //Definimos un objeto para acceder a los elementos de pantalla xml
+    companion object{
+        private const val RC_SIGN_IN = 90000
+    }
+
+    //CLIENTE DE AUTENTICACION DE GOOGLE
+    private lateinit var googleSignInClient: GoogleSignInClient
+
+    private lateinit var auth: FirebaseAuth
     private lateinit var binding: ActivityMainBinding
-
-
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        //Se establece el enlace con la vista xml mediante el objeto binding
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
-        // Inicializar la autentificascion
+        //Se inicializa Firebase y se asigna el objeto para autenticación
         FirebaseApp.initializeApp(this)
         auth = Firebase.auth
 
+        binding.btRegister.setOnClickListener { haceRegistro() }
+        binding.btLogin.setOnClickListener { haceLogin() }
 
 
-        // Definir el onmclick del boton register
-        binding.btRegister.setOnClickListener{ haceRegistro() }
+        val gso = GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN)
+            .requestIdToken(getString(R.string.default_web_client_idg))
+            .requestEmail()
+            .build()
+        googleSignInClient = GoogleSignIn.getClient(this,gso)
 
+        binding.btgoogle.setOnClickListener{googleSignIn()}
 
-        // Definir el onmclick del boton register
-        binding.btLogin.setOnClickListener{ haceLogin() }
 
     }
+// funcion que invoca la autenticacion de google
+    private fun googleSignIn() {
+   val singInIntent = googleSignInClient.signInIntent
+        startActivityForResult(singInIntent, RC_SIGN_IN)//va a llamar al proceso para autenticarse
+    }
 
+    private fun firebaseAuthWithGoogle(idToken: String){
+        val credential = GoogleAuthProvider.getCredential(idToken,null)
+    auth.signInWithCredential(credential)
+        .addOnCompleteListener(this){task ->
+            if(task.isSuccessful){
+                val user = auth.currentUser
+                actualiza(user)
+            }else{
+                actualiza(null)
+            }
+        }
+    }
+    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) { //siempre hacerlo por seguridad
+        super.onActivityResult(requestCode, resultCode, data)
+        if (requestCode== RC_SIGN_IN) {  // esto corresponde a regreso de una autenticación con google
+            val task = GoogleSignIn.getSignedInAccountFromIntent(data)
+            try {
+                val account = task.getResult(ApiException::class.java)!!
+                firebaseAuthWithGoogle(account.idToken!!)
+            } catch (e: ApiException) {
+
+            }
+        }
+    }
 
     private fun haceRegistro() {
-        //Recupero info
         val email = binding.etCorreo.text.toString()
         val clave = binding.etClave.text.toString()
 
-
-        // uTILIZO AUTH PARA HACER EL REGISTRO
-        auth.createUserWithEmailAndPassword(email,clave).addOnCompleteListener(this) {task ->
-                if(task.isSuccessful) {
-                    // se creo el usuario
-                    Log.d("Registrandose","Se registro")
+        //Se usa la función para crear un usuario por medio de correo y contraseña
+        auth.createUserWithEmailAndPassword(email,clave)
+            .addOnCompleteListener(this) { task ->
+                if (task.isSuccessful) {
                     val user = auth.currentUser
-                    refresca(user)
-                }else {
-                    //no se creo el usuario
-                    Log.d("Registrandose","Error de registro")
-                    Toast.makeText(baseContext,"Fallo",Toast.LENGTH_LONG).show()
-                    refresca(null)
-                    //prueba
+                    actualiza(user)
+                } else {
+                    Toast.makeText(baseContext,
+                        getString(R.string.msg_fallo_registro),
+                        Toast.LENGTH_SHORT).show()
+                    actualiza(null)
                 }
-
             }
-
     }
 
-    private fun refresca(user: FirebaseUser?) {
-        if (user != null ) {
+    private fun haceLogin() {
+        val email = binding.etCorreo.text.toString()
+        val clave = binding.etClave.text.toString()
+
+        //Se usa la función para crear un usuario por medio de correo y contraseña
+        auth.signInWithEmailAndPassword(email,clave)
+            .addOnCompleteListener(this) { task ->
+                if (task.isSuccessful) {
+                    val user = auth.currentUser
+                    actualiza(user)
+                } else {
+                    Toast.makeText(baseContext,
+                        getString(R.string.msg_fallo_login),
+                        Toast.LENGTH_SHORT).show()
+                    actualiza(null)
+                }
+            }
+    }
+
+    private fun actualiza(user: FirebaseUser?) {
+        if (user!=null) {
+            // paso a la pantalla principal
             val intent = Intent(this,Principal::class.java)
             startActivity(intent)
         }
     }
 
-    private fun haceLogin() {
-        //Recupero info
-        val email = binding.etCorreo.text.toString()
-        val clave = binding.etClave.text.toString()
-
-
-        // uTILIZO AUTH PARA HACER EL REGISTRO
-        auth.signInWithEmailAndPassword(email,clave)
-            .addOnCompleteListener(this){task ->
-                if(task.isSuccessful) {
-                    // se creo el usuario
-                    Log.d("Autenticando","Se autentico")
-                    val user = auth.currentUser
-                    refresca(user)
-                }else {
-                    //no se creo el usuario
-                    Log.d("Autenticando","Error de autentificacion")
-                    Toast.makeText(baseContext,"Fallo",Toast.LENGTH_LONG).show()
-                    refresca(null)
-                    //prueba
-                }
-
-            }
-    }
-
-    // Estoi se ejecuta cuando se presenta el app en la pa nntalla, valida si alguien esta logueado
     public override fun onStart() {
         super.onStart()
-        val usuario = auth.currentUser
-        refresca(usuario)
+        val user = auth.currentUser
+        actualiza(user)
     }
 
 }
