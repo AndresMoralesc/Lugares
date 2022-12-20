@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="utf-8"?>
+<navigation xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/mobile_navigation"
+    app:startDestination="@+id/nav_juego">
+
+    <fragment
+        android:id="@+id/nav_juego"
+        android:name="com.tarea2.ui.VideoJuego.JuegoFragment"
+        android:label="@string/menu_juego"
+        tools:layout="@layout/fragment_juego" >
+        <action
+            android:id="@+id/action_nav_juego_to_addJuegoFragment"
+            app:destination="@id/addJuegoFragment" />
+    </fragment>
+
+    <fragment
+        android:id="@+id/nav_gallery"
+        android:name="com.tarea2.ui.gallery.GalleryFragment"
+        android:label="@string/menu_gallery"
+        tools:layout="@layout/fragment_gallery" />
+
+    <fragment
+        android:id="@+id/nav_slideshow"
+        android:name="com.tarea2.ui.slideshow.SlideshowFragment"
+        android:label="@string/menu_slideshow"
+        tools:layout="@layout/fragment_slideshow" />
+    <fragment
+        android:id="@+id/addJuegoFragment"
+        android:name="com.tarea2.ui.VideoJuego.addJuegoFragment"
+        android:label="fragment_add_juego"
+        tools:layout="@layout/fragment_add_juego" >
+        <action
+            android:id="@+id/action_addJuegoFragment_to_nav_juego"
+            app:destination="@id/nav_juego" />
+    </fragment>
+</navigation>
